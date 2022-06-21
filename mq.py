@@ -10,7 +10,7 @@ class MQ():
     ######################### Hardware Related Macros #########################
     MQ_PIN                       = 0        # define which analog input channel you are going to use (MCP3008)
     RL_VALUE                     = 5        # define the load resistance on the board, in kilo ohms
-    RO_CLEAN_AIR_FACTOR          = 9.83     # RO_CLEAR_AIR_FACTOR=(Sensor resistance in clean air)/RO,
+    RO_CLEAN_AIR_FACTOR          = 6.5     # RO_CLEAR_AIR_FACTOR=(Sensor resistance in clean air)/RO,
                                             # which is derived from the chart in datasheet
  
     ######################### Software Related Macros #########################
@@ -23,26 +23,16 @@ class MQ():
  
     ######################### Application Related Macros ######################
     GAS_LPG                      = 0
-    GAS_CO                       = 1
-    GAS_SMOKE                    = 2
 
     def __init__(self, Ro=10, analogPin=0):
         self.Ro = Ro
         self.MQ_PIN = analogPin
         self.adc = MCP3008()
         
-        self.LPGCurve = [2.3,0.21,-0.47]    # two points are taken from the curve. 
+        self.LPGCurve = [2.3,-0.15,-0.38]    # two points are taken from the curve. 
                                             # with these two points, a line is formed which is "approximately equivalent"
                                             # to the original curve. 
-                                            # data format:{ x, y, slope}; point1: (lg200, 0.21), point2: (lg10000, -0.59) 
-        self.COCurve = [2.3,0.72,-0.34]     # two points are taken from the curve. 
-                                            # with these two points, a line is formed which is "approximately equivalent" 
-                                            # to the original curve.
-                                            # data format:[ x, y, slope]; point1: (lg200, 0.72), point2: (lg10000,  0.15)
-        self.SmokeCurve =[2.3,0.53,-0.44]   # two points are taken from the curve. 
-                                            # with these two points, a line is formed which is "approximately equivalent" 
-                                            # to the original curve.
-                                            # data format:[ x, y, slope]; point1: (lg200, 0.53), point2: (lg10000,  -0.22)  
+                                            # data format:{ x, y, slope}; point1: (lg200, 0.21), point2: (lg10000, -0.59)  
                 
         print("Calibrating...")
         self.Ro = self.MQCalibration(self.MQ_PIN)
@@ -54,8 +44,6 @@ class MQ():
         val = {}
         read = self.MQRead(self.MQ_PIN)
         val["GAS_LPG"]  = self.MQGetGasPercentage(read/self.Ro, self.GAS_LPG)
-        val["CO"]       = self.MQGetGasPercentage(read/self.Ro, self.GAS_CO)
-        val["SMOKE"]    = self.MQGetGasPercentage(read/self.Ro, self.GAS_SMOKE)
         return val
         
     ######################### MQResistanceCalculation #########################
@@ -120,10 +108,6 @@ class MQ():
     def MQGetGasPercentage(self, rs_ro_ratio, gas_id):
         if ( gas_id == self.GAS_LPG ):
             return self.MQGetPercentage(rs_ro_ratio, self.LPGCurve)
-        elif ( gas_id == self.GAS_CO ):
-            return self.MQGetPercentage(rs_ro_ratio, self.COCurve)
-        elif ( gas_id == self.GAS_SMOKE ):
-            return self.MQGetPercentage(rs_ro_ratio, self.SmokeCurve)
         return 0
      
     #########################  MQGetPercentage #################################
